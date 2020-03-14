@@ -18,6 +18,7 @@
 
 #include "buffer/replacer.h"
 #include "common/config.h"
+#include "dynamic_bitset/dynamic_bitset.h"
 
 namespace bustub {
 
@@ -47,6 +48,15 @@ class ClockReplacer : public Replacer {
 
  private:
   // TODO(student): implement me!
+
+  /** All possible pages; placeholder as a bitset; For fast access and check the existence of a page (the num_pages known ONLY IN RUNTIME, so I use a dynamic_bitset) */
+  dynamic_bitset<> page_placeholders;
+
+  /** List acts as a clock. Each element is a pair of frame id and the ref flag */
+  std::list<std::pair<frame_id_t, bool>> clock;
+
+  /** the position in list := clock hand position */
+  frame_id_t clock_hand = 0;
 };
 
 }  // namespace bustub

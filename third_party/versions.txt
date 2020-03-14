@@ -28,3 +28,9 @@ GBENCHMARK_VERSION=1.4.1
 # branch: master
 # commit hash: 61a0530f28277f2e850bfc39600ce61d02b518de
 # commit hash date: 9 Jan 2018
+
+# dynamic_bitset
+# https://github.com/pinam45/dynamic_bitset
+# branch: master
+# commit hash: 00f2d066ce9deebf28b006636150e5a882beb83f
+# commit hash date: Oct 7 2019
