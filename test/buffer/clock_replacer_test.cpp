@@ -59,4 +59,68 @@ TEST(ClockReplacerTest, SampleTest) {
   EXPECT_EQ(4, value);
 }
 
+TEST(ClockReplacerTest, UnpinTest) {
+  constexpr size_t num_pages = 1000;
+  constexpr frame_id_t insert_times = 1200;
+  static_assert(num_pages <= insert_times);
+  ClockReplacer clock_replacer(num_pages);
+
+  for (frame_id_t i = 0; i < insert_times; i++) {
+    clock_replacer.Unpin(i);
+  }
+  EXPECT_EQ(num_pages, clock_replacer.Size());
+}
+
+TEST(ClockReplacerTest, PinTest) {
+  constexpr size_t num_pages = 1000;
+  constexpr frame_id_t insert_times = 1200;
+  static_assert(num_pages <= insert_times);
+  ClockReplacer clock_replacer(num_pages);
+
+  for (frame_id_t i = 0; i < insert_times; i++) {
+    clock_replacer.Unpin(i);
+  }
+  for (frame_id_t i = 0; i < insert_times; i++) {
+    clock_replacer.Pin(i);
+  }
+  EXPECT_EQ(0, clock_replacer.Size());
+}
+
+TEST(ClockReplacerTest, PinUnpinTest) {
+  constexpr size_t num_pages = 1000;
+  constexpr frame_id_t insert_times = 1200;
+  static_assert(num_pages <= insert_times);
+  ClockReplacer clock_replacer(num_pages);
+
+  for (frame_id_t i = 0; i < insert_times; i++) {
+    clock_replacer.Unpin(i);
+  }
+  for (frame_id_t i = 0; i < insert_times; i++) {
+    clock_replacer.Pin(i);
+    clock_replacer.Unpin(i);
+    clock_replacer.Pin(i);
+  }
+  EXPECT_EQ(0, clock_replacer.Size());
+  for (frame_id_t i = 0; i < insert_times; i++) {
+    clock_replacer.Unpin(i);
+  }
+  EXPECT_EQ(num_pages, clock_replacer.Size());
+}
+
+TEST(ClockReplacerTest, VictimTest) {
+  constexpr size_t num_pages = 1000;
+  constexpr frame_id_t insert_times = 1200;
+  static_assert(num_pages <= insert_times);
+  ClockReplacer clock_replacer(num_pages);
+
+  for (frame_id_t i = 0; i < insert_times; i++) {
+    clock_replacer.Unpin(i);
+  }
+  frame_id_t frame_id;
+  for (size_t i = 0; i < num_pages; i++) {
+    EXPECT_TRUE(clock_replacer.Victim(&frame_id));
+  }
+  EXPECT_FALSE(clock_replacer.Victim(&frame_id));
+}
+
 }  // namespace bustub
