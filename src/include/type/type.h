@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <string>
+#include <memory>
 
 #include "type/type_id.h"
 
@@ -40,7 +41,7 @@ class Type {
   static Value GetMinValue(TypeId type_id);
   static Value GetMaxValue(TypeId type_id);
 
-  inline static Type *GetInstance(TypeId type_id) { return k_types[type_id]; }
+  inline static Type *GetInstance(TypeId type_id) { return k_types[type_id].get(); }
 
   inline TypeId GetTypeId() const { return type_id_; }
 
@@ -112,6 +113,6 @@ class Type {
   // The actual type ID
   TypeId type_id_;
   // Singleton instances.
-  static Type *k_types[14];
+  static std::unique_ptr<Type> k_types[14];
 };
 }  // namespace bustub

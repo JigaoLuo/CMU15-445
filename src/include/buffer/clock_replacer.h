@@ -16,9 +16,9 @@
 #include <shared_mutex>  // NOLINT
 #include <vector>
 #include <unordered_map>
+#include <utility>
 
 #include "buffer/replacer.h"
-#include "common/config.h"
 
 namespace bustub {
 
@@ -76,7 +76,7 @@ class ClockReplacer : public Replacer {
   /** the position in list := clock hand position */
   size_t clock_hand_ = 0;
   /** Latch */
-  std::shared_mutex latch_;
+  mutable std::shared_mutex latch_;
 
   /** Use clock algorithm to kill a frame. NOT Thread Safe*/
   bool Kill(frame_id_t *frame_id);

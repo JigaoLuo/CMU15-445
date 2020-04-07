@@ -44,18 +44,20 @@ void ClockReplacer::Pin(frame_id_t frame_id) {
   // (Test says: no need to check, if it already in ClockReplacer.)
   // 2. remove from clock, if the frame id is in ClockReplacer
   // Pay attention to the case removing clock hand
-  auto clock_hand_it = std::next(clock_.begin(), clock_hand_);
-  if (clock_hand_it->first == frame_id) {
-    clock_.erase(clock_hand_it);
-    if (clock_hand_ == clock_.size()) clock_hand_ = 0;
-    ht_.erase(frame_id);
-  } else {
-    auto got = ht_.find(frame_id);
-    if (got == ht_.end()) {
-      return;
+  if (ht_.size() != 0) {
+    auto clock_hand_it = std::next(clock_.begin(), clock_hand_);
+    if (clock_hand_it->first == frame_id) {
+      clock_.erase(clock_hand_it);
+      if (clock_hand_ == clock_.size()) clock_hand_ = 0;
+      ht_.erase(frame_id);
     } else {
-      clock_.erase(got->second);
-      ht_.erase(got);
+      auto got = ht_.find(frame_id);
+      if (got == ht_.end()) {
+        return;
+      } else {
+        clock_.erase(got->second);
+        ht_.erase(got);
+      }
     }
   }
 }
@@ -63,6 +65,7 @@ void ClockReplacer::Pin(frame_id_t frame_id) {
 void ClockReplacer::Unpin(frame_id_t frame_id) {
   std::lock_guard<std::shared_mutex> lock(latch_);
   assert(ht_.size() == clock_.size());
+  assert(ht_.size() <= num_pages_);
   assert((clock_.size() == 0) ? (clock_hand_ == 0) : (clock_hand_ < clock_.size()));
   // 1. check if frame id already there
   auto got = ht_.find(frame_id);
