@@ -13,7 +13,6 @@
 #pragma once
 
 #include <list>
-#include <mutex>  // NOLINT
 #include <unordered_map>
 
 #include "buffer/clock_replacer.h"
@@ -97,6 +96,32 @@ class BufferPoolManager {
   /** @return size of the buffer pool */
   size_t GetPoolSize() { return pool_size_; }
 
+  /** @return the size of page table (Added by Jigao for test case) */
+  inline size_t GetPageTableSize() {
+    std::shared_lock<std::shared_mutex> lock(latch_);
+    return page_table_.size();
+  }
+
+  /** @return true for the page loaded in buffer pool, otherwise false (Added by Jigao for test case) */
+  inline bool FindInBuffer(page_id_t page_id) {
+    std::shared_lock<std::shared_mutex> lock(latch_);
+    return page_table_.find(page_id) != page_table_.end();
+  }
+
+  /** @return the pin count of the page id (Added by Jigao for test case) */
+  inline int GetPagePinCount(page_id_t page_id) {
+    std::shared_lock<std::shared_mutex> lock(latch_);
+    const auto& got = page_table_.find(page_id);
+    assert(got != page_table_.end());
+    return (pages_ + got->second)->GetPinCount();
+  }
+
+  /** @return the size of replacer (Added by Jigao for test case) */
+  inline size_t GetReplacerSize() {
+    std::shared_lock<std::shared_mutex> lock(latch_);
+    return replacer_->Size();
+  }
+
  private:
   /**
    * Grading function. Do not modify!
@@ -152,6 +177,16 @@ class BufferPoolManager {
    */
   void FlushAllPagesImpl();
 
+  /**
+   * Evict a page from free list or replacer. Always pick from the free list first.
+   * Update select page metadata to contain page_id and add it to the page table.
+   * Not thread safe
+   * Precondition: can find one evict page => !free_list_.empty() || replacer_->Size() != 0
+   * @param new_page if is called by NewPageImpl
+   * @return the frame where page evicted
+   */
+  Page *Evict(page_id_t page_id, bool new_page);
+
   /** Number of pages in the buffer pool. */
   size_t pool_size_;
   /** Array of buffer pool pages. */
@@ -167,6 +202,6 @@ class BufferPoolManager {
   /** List of free pages. */
   std::list<frame_id_t> free_list_;
   /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
-  std::mutex latch_;
+  std::shared_mutex latch_;
 };
 }  // namespace bustub
