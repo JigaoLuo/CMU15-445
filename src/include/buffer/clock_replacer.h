@@ -68,47 +68,25 @@ class ClockReplacer : public Replacer {
   /** @return get the position of clock hand */
   size_t GetClockHand() {
     std::shared_lock<std::shared_mutex> shared_lock(latch_);
-    assert(ht_.size() == clock_.size());
-    assert(clock_.empty() ? (clock_hand_ == 0) : (clock_hand_ < clock_.size()));
     return clock_hand_;
   }
 
-  /** @return the frame_id list in "from front to end" order */
-  std::vector<frame_id_t> GetFrameList() const {
-    std::vector<frame_id_t> v;
-    v.reserve(clock_.size());
-    std::shared_lock<std::shared_mutex> shared_lock(latch_);
-    for (const auto &it : clock_) {
-      v.emplace_back(it.first);
-    }
-    return v;
-  }
-
-  /** @return the reference-bit list in "from front to end" order */
-  std::vector<frame_id_t> GetRefList() const {
-    std::vector<int> v;
-    v.reserve(clock_.size());
-    std::shared_lock<std::shared_mutex> shared_lock(latch_);
-    for (const auto &it : clock_) {
-      v.emplace_back(it.second);
-    }
-    return v;
-  }
-
  private:
-  /** Number of pages */
-  const size_t num_pages_;
+  using exist_bit_t = bool;
+  static constexpr exist_bit_t NOT_EXISTS = false;
+  static constexpr exist_bit_t EXISTS = true;
+  using reference_bit_t = bool;
+  static constexpr reference_bit_t NO_REF = false;
+  static constexpr reference_bit_t REF = true;
+
+  /** Number of current loaded pages */
+  size_t size_ = 0;
   /** List acts as a clock. Each element is a pair of frame id and the ref flag */
-  std::list<std::pair<frame_id_t, bool>> clock_;
-  /** Hash table for O(1) access to frame*/
-  std::unordered_map<frame_id_t, std::list<std::pair<frame_id_t, bool>>::iterator> ht_;
+  std::vector<std::pair<exist_bit_t, reference_bit_t>> clock_;
   /** the position in list := clock hand position */
   size_t clock_hand_ = 0;
   /** Latch */
   mutable std::shared_mutex latch_;
-
-  /** Use clock algorithm to kill a frame. NOT Thread Safe*/
-  bool Kill(frame_id_t *frame_id);
 };
 
 }  // namespace bustub
