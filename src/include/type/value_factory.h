@@ -414,7 +414,7 @@ class ValueFactory {
           bool is_digit[29] = {true,  true, true, true,  false, true, true,  false, true, true,
                                false, true, true, false, true,  true, false, true,  true, false,
                                true,  true, true, true,  true,  true, false, true,  true};
-          for (int i = 0; i < 29; i++) {
+          for (int i = 0; i < 29; i++) {  // NOLINT
             if (is_digit[i]) {
               if (str[i] < '0' || str[i] > '9') {
                 throw Exception("Timestamp format error.");

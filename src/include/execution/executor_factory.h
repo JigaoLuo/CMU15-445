@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <memory>
+#include <memory>  // NOLINT
 
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/abstract_plan.h"

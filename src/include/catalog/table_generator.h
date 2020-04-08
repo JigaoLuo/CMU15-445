@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utility>
+#include <utility>  // NOLINT
 #include <vector>
 
 #include "catalog/simple_catalog.h"

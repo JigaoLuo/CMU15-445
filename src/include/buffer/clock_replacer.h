@@ -17,6 +17,7 @@
 #include <vector>
 #include <unordered_map>
 #include <utility>
+#include <cassert>
 
 #include "buffer/replacer.h"
 
@@ -61,10 +62,38 @@ class ClockReplacer : public Replacer {
    */
   void Unpin(frame_id_t frame_id) override;
 
-  /**
-   * @return the number of frames that are currently in the ClockReplacer.
-   */
+  /** @return the number of frames that are currently in the ClockReplacer. */
   size_t Size() override;
+
+  /** @return get the position of clock hand */
+  size_t GetClockHand() {
+    std::shared_lock<std::shared_mutex> shared_lock(latch_);
+    assert(ht_.size() == clock_.size());
+    assert(clock_.empty() ? (clock_hand_ == 0) : (clock_hand_ < clock_.size()));
+    return clock_hand_;
+  }
+
+  /** @return the frame_id list in "from front to end" order */
+  std::vector<frame_id_t> GetFrameList() const {
+    std::vector<frame_id_t> v;
+    v.reserve(clock_.size());
+    std::shared_lock<std::shared_mutex> shared_lock(latch_);
+    for (const auto &it : clock_) {
+      v.emplace_back(it.first);
+    }
+    return v;
+  }
+
+  /** @return the reference-bit list in "from front to end" order */
+  std::vector<frame_id_t> GetRefList() const {
+    std::vector<int> v;
+    v.reserve(clock_.size());
+    std::shared_lock<std::shared_mutex> shared_lock(latch_);
+    for (const auto &it : clock_) {
+      v.emplace_back(it.second);
+    }
+    return v;
+  }
 
  private:
   /** Number of pages */

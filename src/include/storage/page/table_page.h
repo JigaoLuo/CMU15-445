@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <cstring>
+#include <cstring>  // NOLINT
 
 #include "common/rid.h"
 #include "concurrency/lock_manager.h"

@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <algorithm>
+#include <algorithm>  // NOLINT
 #include <mutex>  // NOLINT
 #include <unordered_map>
 

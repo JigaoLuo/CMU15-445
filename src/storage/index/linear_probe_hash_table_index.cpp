@@ -1,4 +1,4 @@
-#include <vector>
+#include <vector>  // NOLINT
 
 #include "storage/index/linear_probe_hash_table_index.h"
 

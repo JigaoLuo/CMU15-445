@@ -24,8 +24,14 @@
 namespace bustub {
 
 std::unique_ptr<Type> Type::k_types[] = {
-    std::make_unique<Type>(TypeId::INVALID), std::make_unique<BooleanType>(), std::make_unique<TinyintType>(), std::make_unique<SmallintType>(),
-    std::make_unique<IntegerType>(TypeId::INTEGER), std::make_unique<BigintType>(), std::make_unique<DecimalType>(), std::make_unique<VarlenType>(TypeId::VARCHAR),
+    std::make_unique<Type>(TypeId::INVALID),
+    std::make_unique<BooleanType>(),
+    std::make_unique<TinyintType>(),
+    std::make_unique<SmallintType>(),
+    std::make_unique<IntegerType>(TypeId::INTEGER),
+    std::make_unique<BigintType>(),
+    std::make_unique<DecimalType>(),
+    std::make_unique<VarlenType>(TypeId::VARCHAR),
 };
 
 // Get the size of this data type in bytes

@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <cstdint>
+#include <cstdint>  // NOLINT
 #include <string>
 #include <utility>
 

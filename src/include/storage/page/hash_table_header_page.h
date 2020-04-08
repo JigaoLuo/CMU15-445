@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <cassert>
+#include <cassert>  // NOLINT
 #include <climits>
 #include <cstdlib>
 #include <string>

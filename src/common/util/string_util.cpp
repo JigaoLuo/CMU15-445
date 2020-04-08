@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <algorithm>
+#include <algorithm>  // NOLINT
 #include <cstdarg>
 #include <cstring>
 #include <iomanip>

@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <list>
+#include <list>  // NOLINT
 #include <unordered_map>
 
 #include "buffer/clock_replacer.h"
@@ -186,6 +186,20 @@ class BufferPoolManager {
    * @return the frame where page evicted
    */
   Page *Evict(page_id_t page_id, bool new_page);
+
+  /**
+   * check if all pages are pinned
+   * This function is not thread safe, SHOULD BE CALLED WITH PROTECTION OF MUTEX
+   */
+  bool IsAllPinned() {
+    for (size_t i = 0; i < pool_size_; i++) {
+      Page *const page = pages_ + i;
+      if (page->page_id_ != INVALID_PAGE_ID && page->pin_count_ == 0) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   /** Number of pages in the buffer pool. */
   size_t pool_size_;

@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <atomic>
+#include <atomic>  // NOLINT
 #include <unordered_map>
 #include <unordered_set>
 

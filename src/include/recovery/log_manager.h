@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <algorithm>
+#include <algorithm>           // NOLINT
 #include <condition_variable>  // NOLINT
 #include <future>              // NOLINT
 #include <mutex>               // NOLINT

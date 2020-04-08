@@ -168,6 +168,7 @@ TEST(BufferPoolManagerTest, BinaryDataTest) {
 // ---------------------------------------------------------------------------------
 // Test from https://github.com/yixuaz/CMU-15445/blob/master/cmu_15445_2017(sol).rar
 // START FROM HERE
+// NOLINTNEXTLINE
 TEST(BufferPoolManagerTest, SampleTest2) {
   const std::string db_name = "test.db";
   const size_t buffer_pool_size = 10;
@@ -233,7 +234,7 @@ TEST(BufferPoolManagerTest, SampleTest2) {
 
   std::vector<int> test{5, 6, 7, 8, 9, 10};
 
-  for (auto v: test) {
+  for (auto v : test) {
     EXPECT_EQ(1, bpm->GetPagePinCount(v));  // Added by Jigao, GetPagePinCount is a function for test
     Page* page = bpm->FetchPage(v);
     EXPECT_EQ(2, bpm->GetPagePinCount(v));  // Added by Jigao, GetPagePinCount is a function for test

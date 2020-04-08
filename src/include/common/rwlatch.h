@@ -30,7 +30,7 @@ class ReaderWriterLatch {
 
  public:
   ReaderWriterLatch() = default;
-  ~ReaderWriterLatch() { std::lock_guard<mutex_t> guard(mutex_); }
+  ~ReaderWriterLatch() { std::lock_guard<mutex_t> guard(mutex_); }  // NOLINT
 
   DISALLOW_COPY(ReaderWriterLatch);
 

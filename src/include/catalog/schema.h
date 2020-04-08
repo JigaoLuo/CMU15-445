@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <memory>
+#include <memory>  // NOLINT
 #include <string>
 #include <vector>
 

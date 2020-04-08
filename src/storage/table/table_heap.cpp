@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cassert>
+#include <cassert>  // NOLINT
 
 #include "common/logger.h"
 #include "storage/table/table_heap.h"
@@ -45,7 +45,7 @@ bool TableHeap::InsertTuple(const Tuple &tuple, RID *rid, Transaction *txn) {
   auto cur_page = static_cast<TablePage *>(buffer_pool_manager_->FetchPage(first_page_id_));
   if (cur_page == nullptr) {
     txn->SetState(TransactionState::ABORTED);
-    return false;
+    return false;  // NOLINT
   }
 
   cur_page->WLatch();
