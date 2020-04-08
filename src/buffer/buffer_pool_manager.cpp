@@ -66,7 +66,7 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   // 2. if pin_count <= 0 before this call, return false
   if (page->pin_count_ <= 0) return false;  // NOLINT
   // 3. is_dirty: set the dirty flag of this page
-  page->is_dirty_ = is_dirty;
+  page->is_dirty_ |= is_dirty;
   // 4. if pin_count > 0, decrement it and if it becomes zero, put it back to replacer
   if (--page->pin_count_ == 0) {
     replacer_->Unpin(got->second);
@@ -155,14 +155,14 @@ Page *BufferPoolManager::Evict(page_id_t page_id, bool new_page) {
   frame_id_t frame_r_id;
   Page * page;
   if (!free_list_.empty()) {
-    // 2. always find from free list first
+    // 2.     always find from free list first
     frame_r_id = free_list_.front();
     page = pages_ + frame_r_id;
     assert(page->pin_count_ == 0);
     assert(!page->is_dirty_);
     assert(page->page_id_ == INVALID_PAGE_ID);
     free_list_.pop_front();
-    // 2.1 If not called by NewPage, then have to read the page into frame
+    // 2.1     If not called by NewPage, then have to read the page into frame
     if (!new_page) {
       disk_manager_->ReadPage(page_id, page->data_);
     }

@@ -122,6 +122,12 @@ class BufferPoolManager {
     return replacer_->Size();
   }
 
+  /** @return the size of free list (Added by Jigao for test case) */
+  inline size_t GetFreeListSize() {
+    std::shared_lock<std::shared_mutex> lock(latch_);
+    return free_list_.size();
+  }
+
  private:
   /**
    * Grading function. Do not modify!

@@ -35,11 +35,11 @@ TEST(ClockReplacerTest, SampleTest) {
 
   // Scenario: get three victims from the clock.
   int value;
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(1, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(2, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(3, value);
 
   // Scenario: pin elements in the replacer.
@@ -52,13 +52,14 @@ TEST(ClockReplacerTest, SampleTest) {
   clock_replacer.Unpin(4);
 
   // Scenario: continue looking for victims. We expect these victims.
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(5, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(6, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(4, value);
 }
+
 
 // NOLINTNEXTLINE
 TEST(ClockReplacerTest, SampleTest2) {
@@ -134,12 +135,12 @@ TEST(ClockReplacerTest, Victim) {
   EXPECT_FALSE(clock_replacer.Victim(&value));
 
   clock_replacer.Unpin(11);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(11, value);
 
   clock_replacer.Unpin(1);
   clock_replacer.Unpin(1);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(1, value);
 
   clock_replacer.Unpin(3);
@@ -148,13 +149,13 @@ TEST(ClockReplacerTest, Victim) {
   clock_replacer.Unpin(3);
   clock_replacer.Unpin(4);
   clock_replacer.Unpin(10);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(1, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(3, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(4, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(10, value);
   EXPECT_FALSE(clock_replacer.Victim(&value));
 
@@ -163,20 +164,20 @@ TEST(ClockReplacerTest, Victim) {
   clock_replacer.Unpin(7);
   clock_replacer.Unpin(8);
   clock_replacer.Unpin(6);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(5, value);
   clock_replacer.Unpin(7);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(6, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(8, value);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(7, value);
   EXPECT_FALSE(clock_replacer.Victim(&value));
 
   clock_replacer.Unpin(10);
   clock_replacer.Unpin(10);
-  clock_replacer.Victim(&value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
   EXPECT_EQ(10, value);
   EXPECT_FALSE(clock_replacer.Victim(&value));
   EXPECT_FALSE(clock_replacer.Victim(&value));
@@ -188,8 +189,116 @@ TEST(ClockReplacerTest, Victim) {
   }
 
   for (frame_id_t i = 0; i < insert_times; i++) {
-    clock_replacer.Victim(&value);
+    EXPECT_TRUE(clock_replacer.Victim(&value));
     EXPECT_EQ((10 + i) % 1000 , value);
+  }
+}
+
+
+// Added by Jigao
+// printed from gradescope
+// NOLINTNEXTLINE
+TEST(ClockReplacerTest, Pin) {
+  constexpr size_t num_pages = 1010;
+  ClockReplacer clock_replacer(num_pages);
+
+  int value;
+
+  clock_replacer.Pin(0);
+  clock_replacer.Pin(1);
+  clock_replacer.Unpin(11);
+  clock_replacer.Pin(11);
+  clock_replacer.Pin(11);
+  EXPECT_FALSE(clock_replacer.Victim(&value));
+
+  clock_replacer.Pin(1);
+  EXPECT_FALSE(clock_replacer.Victim(&value));
+
+  clock_replacer.Unpin(1);
+  clock_replacer.Unpin(1);
+  clock_replacer.Pin(1);
+  EXPECT_FALSE(clock_replacer.Victim(&value));
+
+  clock_replacer.Unpin(3);
+  clock_replacer.Unpin(4);
+  clock_replacer.Unpin(1);
+  clock_replacer.Unpin(3);
+  clock_replacer.Unpin(4);
+  clock_replacer.Unpin(10);
+  clock_replacer.Pin(3);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
+  EXPECT_EQ(1, value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
+  EXPECT_EQ(4, value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
+  EXPECT_EQ(10, value);
+  EXPECT_FALSE(clock_replacer.Victim(&value));
+
+  clock_replacer.Unpin(5);
+  clock_replacer.Unpin(6);
+  clock_replacer.Unpin(7);
+  clock_replacer.Unpin(8);
+  clock_replacer.Unpin(6);
+  clock_replacer.Unpin(7);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
+  EXPECT_EQ(5, value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
+  EXPECT_EQ(6, value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
+  EXPECT_EQ(7, value);
+  EXPECT_TRUE(clock_replacer.Victim(&value));
+  EXPECT_EQ(8, value);
+
+  clock_replacer.Unpin(10);
+  clock_replacer.Unpin(10);
+  clock_replacer.Pin(10);
+  EXPECT_FALSE(clock_replacer.Victim(&value));
+
+  constexpr frame_id_t insert_times = 1000;
+  for (frame_id_t i = 0; i <= insert_times; i++) {
+      clock_replacer.Unpin(i);
+  }
+  for (frame_id_t i = 7; i < insert_times; i+=2) {
+      clock_replacer.Pin(i);
+      clock_replacer.Victim(&value);
+      EXPECT_EQ(i + 1, value);
+  }
+  clock_replacer.Pin(1000);
+}
+
+
+// Added by Jigao
+// printed from gradescope
+// NOLINTNEXTLINE
+TEST(ClockReplacerTest, Size) {
+  constexpr size_t num_pages = 10010;
+  ClockReplacer clock_replacer(num_pages);
+
+  int value;
+
+  EXPECT_EQ(0, clock_replacer.Size());
+  constexpr frame_id_t insert_times = 6;
+  for (frame_id_t i = 1; i <= insert_times; i++) {
+      clock_replacer.Unpin(i);
+      EXPECT_EQ(i, clock_replacer.Size());
+  }
+  clock_replacer.Unpin(1);
+  EXPECT_EQ(insert_times, clock_replacer.Size());
+
+  for (frame_id_t i = 0; i < insert_times - 1; i++) {
+      EXPECT_TRUE(clock_replacer.Victim(&value));
+      EXPECT_EQ(insert_times - 1 - i, clock_replacer.Size());
+  }
+  EXPECT_EQ(1, clock_replacer.Size());
+
+  constexpr frame_id_t insert_times_ = 10010;
+  for (frame_id_t i = 0; i < insert_times_; i++) {
+      clock_replacer.Unpin(i);
+      if (i > insert_times - 1) {
+          EXPECT_EQ(1 + i, clock_replacer.Size());
+      } else {
+          EXPECT_EQ(2 + i, clock_replacer.Size());
+      }
   }
 }
 }  // namespace bustub
