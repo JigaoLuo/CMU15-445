@@ -646,6 +646,10 @@ TEST(BufferPoolManagerTest, DeletePage) {
   auto *disk_manager = new DiskManager(db_name);
   auto *bpm = new BufferPoolManager(buffer_pool_size, disk_manager);
 
+//        pool_size_: 10 ||
+//        NewPageImpl:NewPageImpl: 0 || NewPageImpl:NewPageImpl: 1 || NewPageImpl:NewPageImpl: 2 || NewPageImpl:NewPageImpl: 3 || NewPageImpl:NewPageImpl: 4 ||
+//        NewPageImpl:NewPageImpl: 5 || NewPageImpl:NewPageImpl: 6 || NewPageImpl:NewPageImpl: 7 || NewPageImpl:NewPageImpl: 8 || NewPageImpl:NewPageImpl: 9 ||
+
   // Scenario: We should be able to create new pages until we fill up the buffer pool.
   page_id_t page_id_temp;
   for (size_t i = 0; i < buffer_pool_size; ++i) {
@@ -657,6 +661,17 @@ TEST(BufferPoolManagerTest, DeletePage) {
     snprintf(page->GetData(), PAGE_SIZE, "%s", strings[i]);
     EXPECT_EQ(0, strcmp(page->GetData(), strings[i]));
   }
+
+        //        FetchPageImpl: 0 || UnpinPageImpl: 0 1 || UnpinPageImpl: 0 1 ||
+        //        FetchPageImpl: 1 || UnpinPageImpl: 1 1 || UnpinPageImpl: 1 1 ||
+        //        FetchPageImpl: 2 || UnpinPageImpl: 2 1 || UnpinPageImpl: 2 1 ||
+        //        FetchPageImpl: 3 || UnpinPageImpl: 3 1 || UnpinPageImpl: 3 1 ||
+        //        FetchPageImpl: 4 || UnpinPageImpl: 4 1 || UnpinPageImpl: 4 1 ||
+        //        FetchPageImpl: 5 || UnpinPageImpl: 5 1 || UnpinPageImpl: 5 1 ||
+        //        FetchPageImpl: 6 || UnpinPageImpl: 6 1 || UnpinPageImpl: 6 1 ||
+        //        FetchPageImpl: 7 || UnpinPageImpl: 7 1 || UnpinPageImpl: 7 1 ||
+        //        FetchPageImpl: 8 || UnpinPageImpl: 8 1 || UnpinPageImpl: 8 1 ||
+        //        FetchPageImpl: 9 || UnpinPageImpl: 9 1 || UnpinPageImpl: 9 1 ||
 
   for (int i = 0; i < static_cast<int>(buffer_pool_size); ++i) {
     auto *page = bpm->FetchPage(i);
@@ -670,6 +685,20 @@ TEST(BufferPoolManagerTest, DeletePage) {
     EXPECT_EQ(0, bpm->GetPagePinCount(i));  // Added by Jigao, GetPagePinCount is a function for test
     EXPECT_EQ(i + 1, bpm->GetReplacerSize());  // Added by Jigao, GetReplacerSize is a function for test
   }
+
+        //        NewPageImpl:NewPageImpl: 10 || UnpinPageImpl: 10 1 ||
+        //        NewPageImpl:NewPageImpl: 11 || UnpinPageImpl: 11 1 ||
+        //        NewPageImpl:NewPageImpl: 12 || UnpinPageImpl: 12 1 ||
+        //        NewPageImpl:NewPageImpl: 13 || UnpinPageImpl: 13 1 ||
+        //        NewPageImpl:NewPageImpl: 14 || UnpinPageImpl: 14 1 ||
+        //        NewPageImpl:NewPageImpl: 15 || UnpinPageImpl: 15 1 ||
+        //        NewPageImpl:NewPageImpl: 16 || UnpinPageImpl: 16 1 ||
+        //        NewPageImpl:NewPageImpl: 17 || UnpinPageImpl: 17 1 ||
+        //        NewPageImpl:NewPageImpl: 18 || UnpinPageImpl: 18 1 ||
+        //        NewPageImpl:NewPageImpl: 19 || UnpinPageImpl: 19 1 ||
+
+
+
 
   EXPECT_EQ(buffer_pool_size, bpm->GetReplacerSize());  // Added by Jigao, GetReplacerSize is a function for test
   for (size_t i = buffer_pool_size; i < buffer_pool_size * 2; ++i) {
@@ -687,6 +716,9 @@ TEST(BufferPoolManagerTest, DeletePage) {
     EXPECT_EQ(buffer_pool_size, bpm->GetReplacerSize());  // Added by Jigao, GetReplacerSize is a function for test
   }
 
+        //        FetchPageImpl: 0 || FetchPageImpl: 1 || FetchPageImpl: 2 || FetchPageImpl: 3 || FetchPageImpl: 4 || FetchPageImpl: 5 || FetchPageImpl: 6 || FetchPageImpl: 7 || FetchPageImpl: 8 || FetchPageImpl: 9 ||
+
+
   for (int i = 0; i < static_cast<int>(buffer_pool_size); ++i) {
     auto *page = bpm->FetchPage(i);
     ASSERT_NE(nullptr, page);
@@ -696,6 +728,30 @@ TEST(BufferPoolManagerTest, DeletePage) {
   EXPECT_EQ(0, bpm->GetReplacerSize());  // Added by Jigao, GetReplacerSize is a function for test
   auto *page = bpm->NewPage(&page_id_temp);
   EXPECT_EQ(nullptr, page);
+
+        //        NewPageImpl:
+        //        DeletePageImpl: 4 ||
+        //        UnpinPageImpl: 4 0 ||
+        //        DeletePageImpl: 4 ||
+
+        //        NewPageImpl:NewPageImpl: 20 ||
+        //        FetchPageImpl: 5 ||
+        //        FetchPageImpl: 6 ||
+        //        FetchPageImpl: 7 ||
+        //        UnpinPageImpl: 5 0 ||
+        //        UnpinPageImpl: 6 0 ||
+        //        UnpinPageImpl: 7 0 ||
+
+        //        UnpinPageImpl: 5 0 ||
+        //        UnpinPageImpl: 6 0 ||
+        //        UnpinPageImpl: 7 0 ||
+
+        //        DeletePageImpl: 7 ||
+        //        NewPageImpl:NewPageImpl: 21 ||
+        //        FetchPageImpl: 5 ||
+        //        FetchPageImpl: 6 ||
+        //        FlushAllPagesImpl. || [       OK ] BufferPoolManagerTest.DeletePage (1 ms)
+
 
   EXPECT_TRUE(bpm->FindInBuffer(4));  // Added by Jigao, FindInBuffer is a function for test
   EXPECT_EQ(1, bpm->GetPagePinCount(4));  // Added by Jigao, GetPagePinCount is a function for test

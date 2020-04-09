@@ -16,6 +16,7 @@
 #include <fstream>
 #include <future>  // NOLINT
 #include <string>
+#include <shared_mutex>
 
 #include "common/config.h"
 
@@ -107,12 +108,13 @@ class DiskManager {
   std::string log_name_;
   // stream to write db file
   std::fstream db_io_;
-  std::string file_name_;
+  const std::string file_name_;
   std::atomic<page_id_t> next_page_id_;
   int num_flushes_;
   int num_writes_;
   bool flush_log_;
   std::future<void> *flush_log_f_;
+  mutable std::shared_mutex db_io_mutex_;
 };
 
 }  // namespace bustub

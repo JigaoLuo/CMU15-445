@@ -98,19 +98,19 @@ class BufferPoolManager {
 
   /** @return the size of page table (Added by Jigao for test case) */
   inline size_t GetPageTableSize() {
-    std::shared_lock<std::shared_mutex> lock(latch_);
+    std::shared_lock<std::shared_mutex> lock(global_latch_);
     return page_table_.size();
   }
 
   /** @return true for the page loaded in buffer pool, otherwise false (Added by Jigao for test case) */
   inline bool FindInBuffer(page_id_t page_id) {
-    std::shared_lock<std::shared_mutex> lock(latch_);
+    std::shared_lock<std::shared_mutex> lock(global_latch_);
     return page_table_.find(page_id) != page_table_.end();
   }
 
   /** @return the pin count of the page id (Added by Jigao for test case) */
   inline int GetPagePinCount(page_id_t page_id) {
-    std::shared_lock<std::shared_mutex> lock(latch_);
+    std::shared_lock<std::shared_mutex> lock(global_latch_);
     const auto& got = page_table_.find(page_id);
     assert(got != page_table_.end());
     return (pages_ + got->second)->GetPinCount();
@@ -118,13 +118,13 @@ class BufferPoolManager {
 
   /** @return the size of replacer (Added by Jigao for test case) */
   inline size_t GetReplacerSize() {
-    std::shared_lock<std::shared_mutex> lock(latch_);
+    std::shared_lock<std::shared_mutex> lock(global_latch_);
     return replacer_->Size();
   }
 
   /** @return the size of free list (Added by Jigao for test case) */
   inline size_t GetFreeListSize() {
-    std::shared_lock<std::shared_mutex> lock(latch_);
+    std::shared_lock<std::shared_mutex> lock(global_latch_);
     return free_list_.size();
   }
 
@@ -186,16 +186,17 @@ class BufferPoolManager {
   /**
    * Evict a page from free list or replacer. Always pick from the free list first.
    * Update select page metadata to contain page_id and add it to the page table.
-   * Not thread safe
+   * NOT THREAD SAFE, should be called with u_lock locked
    * Precondition: can find one evict page => !free_list_.empty() || replacer_->Size() != 0
    * @param new_page if is called by NewPageImpl
+   * @param u_lock Precondition: locked
    * @return the frame where page evicted
    */
-  Page *Evict(page_id_t page_id, bool new_page);
+  Page *Evict(page_id_t page_id, bool new_page, std::unique_lock<std::shared_mutex>* u_lock);
 
   /**
    * check if all pages are pinned
-   * This function is not thread safe, SHOULD BE CALLED WITH PROTECTION OF MUTEX
+   * This function is NOT THREAD SAFE, should be called with protection of mutex
    */
   bool IsAllPinned() {
     for (size_t i = 0; i < pool_size_; i++) {
@@ -221,7 +222,8 @@ class BufferPoolManager {
   Replacer *replacer_;
   /** List of free pages. */
   std::list<frame_id_t> free_list_;
-  /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
-  std::shared_mutex latch_;
+  /** This latch protects buffer manager's shared data structures:
+   *  page table, replacer, pages_(the buffer pool), free list */
+  std::shared_mutex global_latch_;
 };
 }  // namespace bustub

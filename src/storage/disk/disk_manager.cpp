@@ -48,7 +48,7 @@ DiskManager::DiskManager(const std::string &db_file)
     log_io_.open(log_name_, std::ios::binary | std::ios::in | std::ios::app | std::ios::out);
   }
 
-  db_io_.open(db_file, std::ios::binary | std::ios::in | std::ios::out | std::ios::out);
+  db_io_.open(db_file, std::ios::binary | std::ios::in | std::ios::out);
   // directory or file does not exist
   if (!db_io_.is_open()) {
     db_io_.clear();
@@ -74,17 +74,20 @@ void DiskManager::ShutDown() {
  */
 void DiskManager::WritePage(page_id_t page_id, const char *page_data) {
   size_t offset = static_cast<size_t>(page_id) * PAGE_SIZE;
+  std::unique_lock u_lock(db_io_mutex_);
   // set write cursor to offset
   num_writes_ += 1;
   db_io_.seekp(offset);
   db_io_.write(page_data, PAGE_SIZE);
   // check for I/O error
   if (db_io_.bad()) {
+    u_lock.unlock();
     LOG_DEBUG("I/O error while writing");
     return;
   }
   // needs to flush to keep disk file in sync
   db_io_.flush();
+  u_lock.unlock();
 }
 
 /**
@@ -97,11 +100,13 @@ void DiskManager::ReadPage(page_id_t page_id, char *page_data) {
     LOG_DEBUG("I/O error while reading");
     // std::cerr << "I/O error while reading" << std::endl;
   } else {
+    std::unique_lock u_lock(db_io_mutex_);
     // set read cursor to offset
     db_io_.seekp(offset);
     db_io_.read(page_data, PAGE_SIZE);
     // if file ends before reading PAGE_SIZE
     int read_count = db_io_.gcount();
+    u_lock.unlock();
     if (read_count < PAGE_SIZE) {
       LOG_DEBUG("Read less than a page");
       // std::cerr << "Read less than a page" << std::endl;
@@ -188,7 +193,7 @@ int DiskManager::GetNumFlushes() const { return num_flushes_; }
 /**
  * Returns number of Writes made so far
  */
-int DiskManager::GetNumWrites() const { return num_writes_; }
+int DiskManager::GetNumWrites() const { std::shared_lock s_lock(db_io_mutex_); return num_writes_; }
 
 /**
  * Returns true if the log is currently being flushed
