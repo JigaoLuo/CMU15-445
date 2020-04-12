@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <string>
+#include <memory>
 #include "common/exception.h"
 #include "type/bigint_type.h"
 #include "type/boolean_type.h"

@@ -15,6 +15,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "buffer/buffer_pool_manager.h"
 #include "concurrency/transaction.h"
@@ -87,16 +88,25 @@ class LinearProbeHashTable : public HashTable<KeyType, ValueType, KeyComparator>
   size_t GetSize();
 
  private:
-  // member variable
+  // member variable TODO(j): copmmet
   page_id_t header_page_id_;
+  const size_t buckets_pro_page{(BLOCK_ARRAY_SIZE - 1) / 8 + 1};
+  const size_t page_number;
+  size_t size_cache;
+  std::vector<page_id_t> page_ids_cache;
   BufferPoolManager *buffer_pool_manager_;
   KeyComparator comparator_;
-
-  // Readers includes inserts and removes, writer is only resize
+  /** Readers includes inserts and removes, writer is only resize */
   ReaderWriterLatch table_latch_;
-
-  // Hash function
+  /** Hash function */
   HashFunction<KeyType> hash_fn_;
+
+  std::pair<size_t, slot_offset_t> GetPagePosition(size_t hash_position) const {
+    const size_t page_index = hash_position / buckets_pro_page;
+    const slot_offset_t slot_offset
+      = hash_position - page_index * buckets_pro_page;  // hash_position % buckets_pro_page
+    return {page_index, slot_offset};
+  }
 };
 
 }  // namespace bustub

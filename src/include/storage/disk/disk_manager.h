@@ -12,10 +12,10 @@
 
 #pragma once
 
+#include <string>
 #include <atomic>
 #include <fstream>
 #include <future>  // NOLINT
-#include <string>
 #include <shared_mutex>
 
 #include "common/config.h"

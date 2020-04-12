@@ -87,7 +87,7 @@ class HashTableHeaderPage {
   /**
    * @return the number of blocks currently stored in the header page
    */
-  size_t NumBlocks();
+  size_t NumBlocks() const;
 
  private:
   __attribute__((unused)) lsn_t lsn_;

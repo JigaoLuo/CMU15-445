@@ -21,7 +21,7 @@
 namespace bustub {
 
 // NOLINTNEXTLINE
-TEST(HashTableTest, DISABLED_SampleTest) {
+TEST(HashTableTest, SampleTest) {
   auto *disk_manager = new DiskManager("test.db");
   auto *bpm = new BufferPoolManager(50, disk_manager);
 
@@ -52,7 +52,7 @@ TEST(HashTableTest, DISABLED_SampleTest) {
     } else {
       EXPECT_TRUE(ht.Insert(nullptr, i, 2 * i));
     }
-    ht.Insert(nullptr, i, 2 * i);
+    EXPECT_FALSE(ht.Insert(nullptr, i, 2 * i));
     std::vector<int> res;
     ht.GetValue(nullptr, i, &res);
     if (i == 0) {
@@ -100,8 +100,8 @@ TEST(HashTableTest, DISABLED_SampleTest) {
   }
   disk_manager->ShutDown();
   remove("test.db");
-  delete disk_manager;
   delete bpm;
+  delete disk_manager;
 }
 
 }  // namespace bustub

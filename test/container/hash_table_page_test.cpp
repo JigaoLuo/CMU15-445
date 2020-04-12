@@ -23,7 +23,7 @@
 namespace bustub {
 
 // NOLINTNEXTLINE
-TEST(HashTablePageTest, DISABLED_HeaderPageSampleTest) {
+TEST(HashTablePageTest, HeaderPageSampleTest) {
   DiskManager *disk_manager = new DiskManager("test.db");
   auto *bpm = new BufferPoolManager(5, disk_manager);
 
@@ -43,25 +43,25 @@ TEST(HashTablePageTest, DISABLED_HeaderPageSampleTest) {
 
   // add a few hypothetical block pages
   for (unsigned i = 0; i < 10; i++) {
-    header_page->AddBlockPageId(i);
+    header_page->AddBlockPageId(10 * i + 10);
     EXPECT_EQ(i + 1, header_page->NumBlocks());
   }
 
   // check for correct block page IDs
   for (int i = 0; i < 10; i++) {
-    EXPECT_EQ(i, header_page->GetBlockPageId(i));
+    EXPECT_EQ(10 * i + 10, header_page->GetBlockPageId(i));
   }
 
   // unpin the header page now that we are done
   bpm->UnpinPage(header_page_id, true, nullptr);
   disk_manager->ShutDown();
   remove("test.db");
-  delete disk_manager;
   delete bpm;
+  delete disk_manager;
 }
 
 // NOLINTNEXTLINE
-TEST(HashTablePageTest, DISABLED_BlockPageSampleTest) {
+TEST(HashTablePageTest, BlockPageSampleTest) {
   DiskManager *disk_manager = new DiskManager("test.db");
   auto *bpm = new BufferPoolManager(5, disk_manager);
 
@@ -73,13 +73,13 @@ TEST(HashTablePageTest, DISABLED_BlockPageSampleTest) {
 
   // insert a few (key, value) pairs
   for (unsigned i = 0; i < 10; i++) {
-    block_page->Insert(i, i, i);
+    block_page->Insert(i, 10 * i, i + 10);
   }
 
   // check for the inserted pairs
   for (unsigned i = 0; i < 10; i++) {
-    EXPECT_EQ(i, block_page->KeyAt(i));
-    EXPECT_EQ(i, block_page->ValueAt(i));
+    EXPECT_EQ(10 * i, block_page->KeyAt(i));
+    EXPECT_EQ(i + 10, block_page->ValueAt(i));
   }
 
   // remove a few pairs
@@ -107,8 +107,8 @@ TEST(HashTablePageTest, DISABLED_BlockPageSampleTest) {
   bpm->UnpinPage(block_page_id, true, nullptr);
   disk_manager->ShutDown();
   remove("test.db");
-  delete disk_manager;
   delete bpm;
+  delete disk_manager;
 }
 
 }  // namespace bustub
