@@ -45,7 +45,7 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
     if (page->pin_count_++ == 0) {
       replacer_->Pin(got->second);
     }
-    u_lock.unlock();
+//    u_lock.unlock();
     return page;
   }
   // 2.   If all the pages in the buffer pool are pinned, return nullptr.
@@ -64,7 +64,7 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   const auto& got = page_table_.find(page_id);
   assert(got != page_table_.end());
   auto page = pages_ + got->second;
-  page->WLatch();
+//  page->WLatch();
   // 2. if pin_count <= 0 before this call, return false
   if (page->pin_count_ <= 0) {
     return false;
@@ -73,10 +73,10 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   if (--page->pin_count_ == 0) {
     replacer_->Unpin(got->second);
   }
-  u_lock.unlock();
+//  u_lock.unlock();
   // 4. is_dirty: set the dirty flag of this page
   page->is_dirty_ |= is_dirty;
-  page->WUnlatch();
+//  page->WUnlatch();
   return true;
 }
 
@@ -188,7 +188,7 @@ Page *BufferPoolManager::Evict(page_id_t page_id, bool new_page, std::unique_loc
     }
   } else {
     // 2.2. then find from replacer
-    const bool victim_res = replacer_->Victim(&frame_r_id);
+    [[maybe_unused]] const bool victim_res = replacer_->Victim(&frame_r_id);
     assert(victim_res);
     page = pages_ + frame_r_id;
     // 2.2.1.     Delete R from the page table and insert P.

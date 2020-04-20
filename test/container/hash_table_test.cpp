@@ -129,7 +129,10 @@ TEST(HashTableTest, HashTableFullTest) {
 
   // pages full
   for (int i = 0; i < 10; i++) {
-    EXPECT_THROW(ht.Insert(nullptr, LOCAL_BLOCK_ARRAY_SIZE + 1 + i, LOCAL_BLOCK_ARRAY_SIZE + 1 + i), hash_table_full_error);
+    EXPECT_THROW(ht.Insert(nullptr,
+                           LOCAL_BLOCK_ARRAY_SIZE + 1 + i,
+                           LOCAL_BLOCK_ARRAY_SIZE + 1 + i),
+                 hash_table_full_error);
   }
 
   disk_manager->ShutDown();
@@ -353,7 +356,7 @@ TEST(HashTableTest, ConcurrentTest) {
 
   for (int tid = 0; tid < num_threads; tid++) {
     std::vector<int> res;
-    EXPECT_TRUE(ht.GetValue(nullptr,tid, &res));
+    EXPECT_TRUE(ht.GetValue(nullptr, tid, &res));
     EXPECT_EQ(res.size(), 1);
     EXPECT_EQ(res[0], tid);
   }

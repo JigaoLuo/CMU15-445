@@ -54,6 +54,8 @@ class ComparisonExpression : public AbstractExpression {
   }
 
  private:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
   CmpBool PerformComparison(const Value &lhs, const Value &rhs) const {
     switch (comp_type_) {
       case ComparisonType::Equal:
@@ -72,6 +74,7 @@ class ComparisonExpression : public AbstractExpression {
         BUSTUB_ASSERT(false, "Unsupported comparison type.");
     }
   }
+#pragma GCC diagnostic pop
 
   std::vector<const AbstractExpression *> children_;
   ComparisonType comp_type_;

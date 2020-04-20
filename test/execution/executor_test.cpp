@@ -23,6 +23,7 @@
 #include "execution/executor_context.h"
 #include "execution/executor_factory.h"
 #include "execution/executors/aggregation_executor.h"
+#include "execution/executors/seq_scan_executor.h"
 #include "execution/executors/hash_join_executor.h"
 #include "execution/executors/insert_executor.h"
 #include "execution/expressions/aggregate_value_expression.h"
@@ -122,7 +123,7 @@ class ExecutorTest : public ::testing::Test {
 };
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleSeqScanTest) {
+TEST_F(ExecutorTest, SimpleSeqScanTest) {
   // SELECT colA, colB FROM test_1 WHERE colA < 500
   TableMetadata *table_info = GetExecutorContext()->GetCatalog()->GetTable("test_1");
   Schema &schema = table_info->schema_;
@@ -138,6 +139,8 @@ TEST_F(ExecutorTest, DISABLED_SimpleSeqScanTest) {
   Tuple tuple;
   uint32_t num_tuples = 0;
   std::cout << "ColA, ColB" << std::endl;
+  ASSERT_TRUE(reinterpret_cast<SeqScanExecutor*>(executor.get())->GetTableIterator()
+              == table_info->table_->Begin(GetExecutorContext()->GetTransaction()));  // Add by Jigao
   while (executor->Next(&tuple)) {
     ASSERT_TRUE(tuple.GetValue(out_schema, out_schema->GetColIdx("colA")).GetAs<int32_t>() < 500);
     ASSERT_TRUE(tuple.GetValue(out_schema, out_schema->GetColIdx("colB")).GetAs<int32_t>() < 10);
@@ -146,10 +149,40 @@ TEST_F(ExecutorTest, DISABLED_SimpleSeqScanTest) {
     num_tuples++;
   }
   ASSERT_EQ(num_tuples, 500);
+  ASSERT_TRUE(reinterpret_cast<SeqScanExecutor*>(executor.get())->GetTableIterator()
+              == table_info->table_->End());  // Add by Jigao
+}
+
+// Added by Jigao
+// NOLINTNEXTLINE
+TEST_F(ExecutorTest, SimpleSeqScanTest2) {
+  // SELECT colB FROM test_1 WHERE colB < 5
+  TableMetadata *table_info = GetExecutorContext()->GetCatalog()->GetTable("test_1");
+  Schema &schema = table_info->schema_;
+  auto *colB = MakeColumnValueExpression(schema, 0, "colB");
+  auto *const5 = MakeConstantValueExpression(ValueFactory::GetIntegerValue(5));
+  auto *predicate = MakeComparisonExpression(colB, const5, ComparisonType::LessThan);
+  auto *out_schema = MakeOutputSchema({{"colB", colB}});
+
+  SeqScanPlanNode plan{out_schema, predicate, table_info->oid_};
+  auto executor = ExecutorFactory::CreateExecutor(GetExecutorContext(), &plan);
+  executor->Init();
+  Tuple tuple;
+  uint32_t num_tuples = 0;
+  std::cout << "ColB" << std::endl;
+  ASSERT_TRUE(reinterpret_cast<SeqScanExecutor*>(executor.get())->GetTableIterator()
+              == table_info->table_->Begin(GetExecutorContext()->GetTransaction()));  // Add by Jigao
+  while (executor->Next(&tuple)) {
+    ASSERT_TRUE(tuple.GetValue(out_schema, out_schema->GetColIdx("colB")).GetAs<int32_t>() < 5);
+    std::cout << tuple.GetValue(out_schema, out_schema->GetColIdx("colB")).GetAs<int32_t>() << std::endl;
+    num_tuples++;
+  }
+  ASSERT_TRUE(reinterpret_cast<SeqScanExecutor*>(executor.get())->GetTableIterator()
+              == table_info->table_->End());  // Add by Jigao
 }
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleRawInsertTest) {
+TEST_F(ExecutorTest, SimpleRawInsertTest) {
   // INSERT INTO empty_table2 VALUES (100, 10), (101, 11), (102, 12)
   // Create Values to insert
   std::vector<Value> val1{ValueFactory::GetIntegerValue(100), ValueFactory::GetIntegerValue(10)};
@@ -158,7 +191,7 @@ TEST_F(ExecutorTest, DISABLED_SimpleRawInsertTest) {
   std::vector<std::vector<Value>> raw_vals{val1, val2, val3};
   // Create insert plan node
   auto table_info = GetExecutorContext()->GetCatalog()->GetTable("empty_table2");
-  InsertPlanNode insert_plan{std::move(raw_vals), table_info->oid_};
+  InsertPlanNode insert_plan{std::move(raw_vals), table_info->oid_};  // raw insert without child
   auto insert_executor = ExecutorFactory::CreateExecutor(GetExecutorContext(), &insert_plan);
   insert_executor->Init();
   ASSERT_TRUE(insert_executor->Next(nullptr));
@@ -175,6 +208,8 @@ TEST_F(ExecutorTest, DISABLED_SimpleRawInsertTest) {
   Tuple tuple;
   std::cout << "ColA, ColB" << std::endl;
   // First value
+  ASSERT_TRUE(reinterpret_cast<SeqScanExecutor*>(scan_executor.get())->GetTableIterator()
+              == table_info->table_->Begin(GetExecutorContext()->GetTransaction()));  // Add by Jigao
   ASSERT_TRUE(scan_executor->Next(&tuple));
   ASSERT_EQ(tuple.GetValue(out_schema, out_schema->GetColIdx("colA")).GetAs<int32_t>(), 100);
   ASSERT_EQ(tuple.GetValue(out_schema, out_schema->GetColIdx("colB")).GetAs<int32_t>(), 10);
@@ -194,10 +229,12 @@ TEST_F(ExecutorTest, DISABLED_SimpleRawInsertTest) {
             << tuple.GetValue(out_schema, out_schema->GetColIdx("colB")).GetAs<int32_t>() << std::endl;
   // End
   ASSERT_FALSE(scan_executor->Next(&tuple));
+  ASSERT_TRUE(reinterpret_cast<SeqScanExecutor*>(scan_executor.get())->GetTableIterator()
+              == table_info->table_->End());  // Add by Jigao
 }
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleSelectInsertTest) {
+TEST_F(ExecutorTest, SimpleSelectInsertTest) {
   // INSERT INTO empty_table2 SELECT colA, colB FROM test_1 WHERE colA < 500
   std::unique_ptr<AbstractPlanNode> scan_plan1;
   const Schema *out_schema1;
@@ -254,8 +291,10 @@ TEST_F(ExecutorTest, DISABLED_SimpleSelectInsertTest) {
 }
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleHashJoinTest) {
+TEST_F(ExecutorTest, SimpleHashJoinTest) {
   // INSERT INTO empty_table2 SELECT colA, colB FROM test_1 WHERE colA < 500
+  // TODO(jigao): send a pull request. the sql is wrong
+  // SELECT colA, colB, col1, col2 FROM test_1 JOIN test_2 ON colA = col1
   std::unique_ptr<AbstractPlanNode> scan_plan1;
   const Schema *out_schema1;
   {
@@ -300,18 +339,75 @@ TEST_F(ExecutorTest, DISABLED_SimpleHashJoinTest) {
   uint32_t num_tuples = 0;
   std::cout << "ColA, ColB, Col1, Col2" << std::endl;
   while (executor->Next(&tuple)) {
+    ASSERT_EQ(tuple.GetValue(out_final, out_schema1->GetColIdx("colA")).GetAs<int32_t>(),
+              tuple.GetValue(out_final, out_schema2->GetColIdx("col1")).GetAs<int32_t>());
     std::cout << tuple.GetValue(out_final, out_schema1->GetColIdx("colA")).GetAs<int32_t>() << ", "
               << tuple.GetValue(out_final, out_schema1->GetColIdx("colB")).GetAs<int32_t>() << ", "
               << tuple.GetValue(out_final, out_schema2->GetColIdx("col1")).GetAs<int16_t>() << ", "
               << tuple.GetValue(out_final, out_schema2->GetColIdx("col2")).GetAs<int32_t>() << std::endl;
+    num_tuples++;
+  }
+  ASSERT_EQ(num_tuples, 100);
+}
 
+// Added by Jigao
+// NOLINTNEXTLINE
+TEST_F(ExecutorTest, SimpleHashJoinTest2) {
+  // SELECT colA, col1, col2 FROM test_1 JOIN test_2 ON colA = col1
+  std::unique_ptr<AbstractPlanNode> scan_plan1;
+  const Schema *out_schema1;
+  {
+    auto table_info = GetExecutorContext()->GetCatalog()->GetTable("test_1");
+    auto &schema = table_info->schema_;
+    auto colA = MakeColumnValueExpression(schema, 0, "colA");
+    out_schema1 = MakeOutputSchema({{"colA", colA}});
+    scan_plan1 = std::make_unique<SeqScanPlanNode>(out_schema1, nullptr, table_info->oid_);
+  }
+  std::unique_ptr<AbstractPlanNode> scan_plan2;
+  const Schema *out_schema2;
+  {
+    auto table_info = GetExecutorContext()->GetCatalog()->GetTable("test_2");
+    auto &schema = table_info->schema_;
+    auto col1 = MakeColumnValueExpression(schema, 0, "col1");
+    auto col2 = MakeColumnValueExpression(schema, 0, "col2");
+    out_schema2 = MakeOutputSchema({{"col1", col1}, {"col2", col2}});
+    scan_plan2 = std::make_unique<SeqScanPlanNode>(out_schema2, nullptr, table_info->oid_);
+  }
+  std::unique_ptr<HashJoinPlanNode> join_plan;
+  const Schema *out_final;
+  {
+    // colA has a tuple index of 0 because it is the left side of the join
+    auto colA = MakeColumnValueExpression(*out_schema1, 0, "colA");
+    // col1 and col2 have a tuple index of 1 because they are the right side of the join
+    auto col1 = MakeColumnValueExpression(*out_schema2, 1, "col1");
+    auto col2 = MakeColumnValueExpression(*out_schema2, 1, "col2");
+    std::vector<const AbstractExpression *> left_keys{colA};
+    std::vector<const AbstractExpression *> right_keys{col1};
+    auto predicate = MakeComparisonExpression(colA, col1, ComparisonType::Equal);
+    out_final = MakeOutputSchema({{"colA", colA}, {"col1", col1}, {"col2", col2}});
+    join_plan = std::make_unique<HashJoinPlanNode>(
+        out_final, std::vector<const AbstractPlanNode *>{scan_plan1.get(), scan_plan2.get()}, predicate,
+        std::move(left_keys), std::move(right_keys));
+  }
+
+  auto executor = ExecutorFactory::CreateExecutor(GetExecutorContext(), join_plan.get());
+  executor->Init();
+  Tuple tuple;
+  uint32_t num_tuples = 0;
+  std::cout << "ColA, Col1, Col2" << std::endl;
+  while (executor->Next(&tuple)) {
+    ASSERT_EQ(tuple.GetValue(out_final, out_schema1->GetColIdx("colA")).GetAs<int32_t>(),
+              tuple.GetValue(out_final, out_schema2->GetColIdx("col1")).GetAs<int32_t>());
+    std::cout << tuple.GetValue(out_final, out_schema1->GetColIdx("colA")).GetAs<int32_t>() << ", "
+              << tuple.GetValue(out_final, out_schema2->GetColIdx("col1")).GetAs<int16_t>() << ", "
+              << tuple.GetValue(out_final, out_schema2->GetColIdx("col2")).GetAs<int32_t>() << std::endl;
     num_tuples++;
   }
   ASSERT_EQ(num_tuples, 100);
 }
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleAggregationTest) {
+TEST_F(ExecutorTest, SimpleAggregationTest) {
   // SELECT COUNT(colA), SUM(colA), min(colA), max(colA) from test_1;
   std::unique_ptr<AbstractPlanNode> scan_plan;
   const Schema *scan_schema;
@@ -334,10 +430,15 @@ TEST_F(ExecutorTest, DISABLED_SimpleAggregationTest) {
 
     agg_schema = MakeOutputSchema({{"countA", countA}, {"sumA", sumA}, {"minA", minA}, {"maxA", maxA}});
     agg_plan = std::make_unique<AggregationPlanNode>(
-        agg_schema, scan_plan.get(), nullptr, std::vector<const AbstractExpression *>{},
-        std::vector<const AbstractExpression *>{colA, colA, colA, colA},
-        std::vector<AggregationType>{AggregationType::CountAggregate, AggregationType::SumAggregate,
-                                     AggregationType::MinAggregate, AggregationType::MaxAggregate});
+        agg_schema,
+        scan_plan.get() /** child */,
+        nullptr /** having */,
+        std::vector<const AbstractExpression *>{} /** group by */,
+        std::vector<const AbstractExpression *>{colA, colA, colA, colA} /** aggregate expression */,
+        std::vector<AggregationType>{AggregationType::CountAggregate,
+                                     AggregationType::SumAggregate,
+                                     AggregationType::MinAggregate,
+                                     AggregationType::MaxAggregate} /** aggregate type */);
   }
 
   auto executor = ExecutorFactory::CreateExecutor(GetExecutorContext(), agg_plan.get());
@@ -364,7 +465,7 @@ TEST_F(ExecutorTest, DISABLED_SimpleAggregationTest) {
 }
 
 // NOLINTNEXTLINE
-TEST_F(ExecutorTest, DISABLED_SimpleGroupByAggregation) {
+TEST_F(ExecutorTest, SimpleGroupByAggregation) {
   // SELECT count(colA), colB, sum(C) FROM test_1 Group By colB HAVING count(colA) > 100
   std::unique_ptr<AbstractPlanNode> scan_plan;
   const Schema *scan_schema;
@@ -398,8 +499,12 @@ TEST_F(ExecutorTest, DISABLED_SimpleGroupByAggregation) {
 
     // Create plan
     agg_schema = MakeOutputSchema({{"countA", countA}, {"colB", groupbyB}, {"sumC", sumC}});
-    agg_plan = std::make_unique<AggregationPlanNode>(agg_schema, scan_plan.get(), having, std::move(group_by_cols),
-                                                     std::move(aggregate_cols), std::move(agg_types));
+    agg_plan = std::make_unique<AggregationPlanNode>(agg_schema,
+                                                     scan_plan.get() /** child */,
+                                                     having /** having */,
+                                                     std::move(group_by_cols) /** group by */,
+                                                     std::move(aggregate_cols) /** aggregate expression */,
+                                                     std::move(agg_types) /** aggregate type */);
   }
   auto executor = ExecutorFactory::CreateExecutor(GetExecutorContext(), agg_plan.get());
   executor->Init();

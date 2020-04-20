@@ -99,7 +99,7 @@ class HashJoinExecutor : public AbstractExecutor {
                    std::unique_ptr<AbstractExecutor> &&right);
 
   /** @return the JHT in use. Do not modify this function, otherwise you will get a zero. */
-  // Uncomment me! const HT *GetJHT() const { return &jht_; }
+  const HT *GetJHT() const { return &jht_; }
 
   const Schema *GetOutputSchema() override { return plan_->OutputSchema(); }
 
@@ -121,9 +121,9 @@ class HashJoinExecutor : public AbstractExecutor {
       // We evaluate the tuple on the expression and schema.
       Value val = expr->Evaluate(tuple, schema);
       // If this produces a value,
-      if (!val.IsNull()) {
+      if (!val.IsNull()) {  // NOLINT
         // We combine the hash of that value into our current hash.
-        curr_hash = HashUtil::CombineHashes(curr_hash, HashUtil::HashValue(&val));
+        curr_hash = HashUtil::CombineHashes(curr_hash, HashUtil::HashValue(&val));  // NOLINT
       }
     }
     return curr_hash;
@@ -132,13 +132,18 @@ class HashJoinExecutor : public AbstractExecutor {
  private:
   /** The hash join plan node. */
   const HashJoinPlanNode *plan_;
+  /** left keys */
+  std::unique_ptr<AbstractExecutor> left_executor_;
+  /** right keys */
+  std::unique_ptr<AbstractExecutor> right_executor_;
   /** The comparator is used to compare hashes. */
   [[maybe_unused]] HashComparator jht_comp_{};
   /** The identity hash function. */
   IdentityHashFunction jht_hash_fn_{};
-
   /** The hash table that we are using. */
-  // Uncomment me! HT jht_;
+  HT jht_;
+  /** if hash table built TODO(jigao): replaced by size() */
+  bool jht_built_{false};
   /** The number of buckets in the hash table. */
   static constexpr uint32_t jht_num_buckets_ = 2;
 };

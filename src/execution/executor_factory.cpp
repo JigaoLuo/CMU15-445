@@ -22,6 +22,8 @@
 #include "execution/executors/seq_scan_executor.h"
 
 namespace bustub {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
 std::unique_ptr<AbstractExecutor> ExecutorFactory::CreateExecutor(ExecutorContext *exec_ctx,
                                                                   const AbstractPlanNode *plan) {
   switch (plan->GetType()) {
@@ -59,4 +61,5 @@ std::unique_ptr<AbstractExecutor> ExecutorFactory::CreateExecutor(ExecutorContex
     }
   }
 }
+#pragma GCC diagnostic pop
 }  // namespace bustub

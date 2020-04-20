@@ -122,8 +122,6 @@ class TablePage : public Page {
    */
   bool GetTuple(const RID &rid, Tuple *tuple, Transaction *txn, LockManager *lock_manager);
 
-  /** @return the rid of the first tuple in this page */
-
   /**
    * @param[out] first_rid the RID of the first tuple in this page
    * @return true if the first tuple exists, false otherwise

@@ -152,15 +152,15 @@ bool HASH_TABLE_TYPE::Insert_Helper(Transaction *transaction, const KeyType &key
 template <typename KeyType, typename ValueType, typename KeyComparator>
 bool HASH_TABLE_TYPE::Insert(Transaction *transaction, const KeyType &key, const ValueType &value) {
   table_latch_.RLock();
-   bool insert_helper_res = false;
-   try {
-     insert_helper_res = Insert_Helper(transaction, key, value);
-   } catch (hash_table_full_error) {
-     table_latch_.RUnlock();
-     throw hash_table_full_error{};
-   }
-   table_latch_.RUnlock();
-   return insert_helper_res;
+  bool insert_helper_res = false;
+  try {
+    insert_helper_res = Insert_Helper(transaction, key, value);
+  } catch (hash_table_full_error) {
+    table_latch_.RUnlock();
+    throw hash_table_full_error{};
+  }
+  table_latch_.RUnlock();
+  return insert_helper_res;
 }
 
 /*****************************************************************************
@@ -271,7 +271,7 @@ void HASH_TABLE_TYPE::Resize(size_t initial_size) {
 
   // 4. Rehash
   for (const auto& pair : pair_cache) {
-    bool insert_helper_res = false;
+    [[maybe_unused]] bool insert_helper_res = false;
     try {
       insert_helper_res = Insert_Helper(nullptr, pair.first, pair.second);
     } catch (hash_table_full_error) {

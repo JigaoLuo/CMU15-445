@@ -54,14 +54,43 @@ class SimpleCatalog {
    */
   TableMetadata *CreateTable(Transaction *txn, const std::string &table_name, const Schema &schema) {
     BUSTUB_ASSERT(names_.count(table_name) == 0, "Table names should be unique!");
-    return nullptr;
+//    std::cout << "CreateTable " << table_name << std::endl;
+    table_oid_t table_oid = next_table_oid_++;
+    names_.emplace(std::piecewise_construct,
+                   std::forward_as_tuple(table_name),
+                   std::forward_as_tuple(table_oid));
+    const auto& got =
+        tables_.emplace(table_oid,
+                        std::make_unique<TableMetadata>(schema,
+                        table_name,
+                        std::make_unique<TableHeap>(bpm_, lock_manager_, log_manager_, txn),
+                        table_oid));
+    assert(got.second);
+    assert(got.first->second->table_);
+    return got.first->second.get();
   }
 
   /** @return table metadata by name */
-  TableMetadata *GetTable(const std::string &table_name) { return nullptr; }
+  TableMetadata *GetTable(const std::string &table_name) {
+//    std::cout << "GetTable table_name:" << table_name << std::endl;
+    const auto& name_got = names_.find(table_name);
+    if (name_got == names_.end()) {
+      throw std::out_of_range{table_name + " not found!"};
+    }
+    const auto& table_got = tables_.find(name_got->second);
+    assert(table_got != tables_.end());
+    return table_got->second.get();
+  }
 
   /** @return table metadata by oid */
-  TableMetadata *GetTable(table_oid_t table_oid) { return nullptr; }
+  TableMetadata *GetTable(table_oid_t table_oid) {
+    //    std::cout << "GetTable table_oid:" << table_oid << std::endl;
+    const auto& got = tables_.find(table_oid);
+    if (got == tables_.end()) {
+      throw std::out_of_range{std::to_string(table_oid) + " not found!"};
+    }
+    return got->second.get();
+  }
 
  private:
   [[maybe_unused]] BufferPoolManager *bpm_;

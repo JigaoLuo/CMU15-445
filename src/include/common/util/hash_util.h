@@ -32,8 +32,8 @@ class HashUtil {
   static inline hash_t HashBytes(const char *bytes, size_t length) {
     // https://github.com/greenplum-db/gpos/blob/b53c1acd6285de94044ff91fbee91589543feba1/libgpos/src/utils.cpp#L126
     hash_t hash = length;
-    for (size_t i = 0; i < length; ++i) {
-      hash = ((hash << 5) ^ (hash >> 27)) ^ bytes[i];
+    for (size_t i = 0; i < length; ++i) {  // NOLINT
+      hash = ((hash << 5) ^ (hash >> 27)) ^ bytes[i];  // NOLINT
     }
     return hash;
   }
@@ -42,7 +42,7 @@ class HashUtil {
     hash_t both[2];
     both[0] = l;
     both[1] = r;
-    return HashBytes(reinterpret_cast<char *>(both), sizeof(hash_t) * 2);
+    return HashBytes(reinterpret_cast<char *>(both), sizeof(hash_t) * 2);  // NOLINT
   }
 
   static inline hash_t SumHashes(hash_t l, hash_t r) { return (l % prime_factor + r % prime_factor) % prime_factor; }
@@ -58,6 +58,8 @@ class HashUtil {
   }
 
   /** @return the hash of the value */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
   static inline hash_t HashValue(const Value *val) {
     switch (val->GetTypeId()) {
       case TypeId::TINYINT: {
@@ -99,5 +101,6 @@ class HashUtil {
     }
   }
 };
+#pragma GCC diagnostic pop
 
 }  // namespace bustub

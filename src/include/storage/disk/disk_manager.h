@@ -12,13 +12,13 @@
 
 #pragma once
 
-#include <string>
-#include <atomic>
-#include <fstream>
+#include <string>  // NOLINT
+#include <atomic>  // NOLINT
+#include <fstream>  // NOLINT
 #include <future>  // NOLINT
-#include <shared_mutex>
+#include <shared_mutex>  // NOLINT
 
-#include "common/config.h"
+#include "common/config.h"  // NOLINT
 
 namespace bustub {
 

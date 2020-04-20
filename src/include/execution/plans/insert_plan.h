@@ -46,7 +46,7 @@ class InsertPlanNode : public AbstractPlanNode {
   PlanType GetType() const override { return PlanType::Insert; }
 
   /** @return the identifier of the table that should be inserted into */
-  table_oid_t TableOid() const { return table_oid_; }
+  table_oid_t GetTableOid() const { return table_oid_; }
 
   /** @return true if we embed insert values directly into the plan, false if we have a child plan providing tuples */
   bool IsRawInsert() const { return GetChildren().empty(); }

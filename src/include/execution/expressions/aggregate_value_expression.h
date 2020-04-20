@@ -33,6 +33,8 @@ class AggregateValueExpression : public AbstractExpression {
   AggregateValueExpression(bool is_group_by_term, uint32_t term_idx, TypeId ret_type)
       : AbstractExpression({}, ret_type), is_group_by_term_{is_group_by_term}, term_idx_{term_idx} {}
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
   Value Evaluate(const Tuple *tuple, const Schema *schema) const override {
     BUSTUB_ASSERT(false, "Aggregation should only refer to group-by and aggregates.");
   }
@@ -41,6 +43,7 @@ class AggregateValueExpression : public AbstractExpression {
                      const Schema *right_schema) const override {
     BUSTUB_ASSERT(false, "Aggregation should only refer to group-by and aggregates.");
   }
+#pragma GCC diagnostic pop
 
   Value EvaluateAggregate(const std::vector<Value> &group_bys, const std::vector<Value> &aggregates) const override {
     return is_group_by_term_ ? group_bys[term_idx_] : aggregates[term_idx_];

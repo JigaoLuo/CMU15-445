@@ -38,7 +38,7 @@ class HashJoinPlanNode : public AbstractPlanNode {
   PlanType GetType() const override { return PlanType::HashJoin; }
 
   /** @return the predicate to be used in the hash join */
-  const AbstractExpression *Predicate() const { return predicate_; }
+  const AbstractExpression *GetPredicate() const { return predicate_; }
 
   /** @return the left plan node of the hash join, by convention this is used to build the table */
   const AbstractPlanNode *GetLeftPlan() const {

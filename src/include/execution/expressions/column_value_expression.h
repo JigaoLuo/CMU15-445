@@ -41,9 +41,12 @@ class ColumnValueExpression : public AbstractExpression {
                            : right_tuple->GetValue(right_schema, col_idx_);
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
   Value EvaluateAggregate(const std::vector<Value> &group_bys, const std::vector<Value> &aggregates) const override {
     BUSTUB_ASSERT(false, "Aggregation should only refer to group-by and aggregates.");
   }
+#pragma GCC diagnostic ignored "-Wreturn-type"
 
  private:
   /** Tuple index 0 = left side of join, tuple index 1 = right side of join */
