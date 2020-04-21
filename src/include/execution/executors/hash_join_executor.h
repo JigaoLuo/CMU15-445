@@ -43,45 +43,9 @@ class IdentityHashFunction : public HashFunction<hash_t> {
   uint64_t GetHash(size_t key) override { return key; }
 };
 
-/**
- * A simple hash table that supports hash joins.
- */
-class SimpleHashJoinHashTable {
- public:
-  /** Creates a new simple hash join hash table. */
-  SimpleHashJoinHashTable(const std::string &name, BufferPoolManager *bpm, HashComparator cmp, uint32_t buckets,
-                          const IdentityHashFunction &hash_fn) {}
-
-  /**
-   * Inserts a (hash key, tuple) pair into the hash table.
-   * @param txn the transaction that we execute in
-   * @param h the hash key
-   * @param t the tuple to associate with the key
-   * @return true if the insert succeeded
-   */
-  bool Insert(Transaction *txn, hash_t h, const Tuple &t) {
-    hash_table_[h].emplace_back(t);
-    return true;
-  }
-
-  /**
-   * Gets the values in the hash table that match the given hash key.
-   * @param txn the transaction that we execute in
-   * @param h the hash key
-   * @param[out] t the list of tuples that matched the key
-   */
-  void GetValue(Transaction *txn, hash_t h, std::vector<Tuple> *t) { *t = hash_table_[h]; }
-
- private:
-  std::unordered_map<hash_t, std::vector<Tuple>> hash_table_;
-};
-
-// TODO(student): when you are ready to attempt task 3, replace the using declaration!
-using HT = SimpleHashJoinHashTable;
-
-// using HashJoinKeyType = ???;
-// using HashJoinValType = ???;
-// using HT = LinearProbeHashTable<HashJoinKeyType, HashJoinValType, HashComparator>;
+using HashJoinKeyType = hash_t;
+using HashJoinValType = TmpTuple;
+using HT = LinearProbeHashTable<HashJoinKeyType, HashJoinValType, HashComparator>;
 
 /**
  * HashJoinExecutor executes hash join operations.

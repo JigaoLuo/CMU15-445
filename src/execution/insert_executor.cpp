@@ -49,13 +49,9 @@ bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple) {
   } else {
     // non-raw insert: insert the values from child
     assert(child_executor_ != nullptr);
-    std::vector<Tuple> tuples_from_child;
     Tuple tuple_from_child;
     while (child_executor_->Next(&tuple_from_child)) {
-      tuples_from_child.emplace_back(tuple_from_child);
-    }
-    for (const auto& t_from_child : tuples_from_child) {
-      result &= table_heap->InsertTuple(t_from_child, &rid, exec_ctx_->GetTransaction());
+      result &= table_heap->InsertTuple(tuple_from_child, &rid, exec_ctx_->GetTransaction());
       assert(rid.GetPageId() != INVALID_PAGE_ID);
     }
   }

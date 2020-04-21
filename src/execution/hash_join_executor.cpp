@@ -49,18 +49,42 @@ bool HashJoinExecutor::Next(Tuple *tuple) {
   //    => pipeline breaker, blocked until left child empty
   Tuple t;
   if (!jht_built_) {  // NOLINT
-    // 1.1. Get all tuple from left side
-    std::vector<Tuple> tuples_from_left_child;
+    // 1.0. new a tmp_tuple_page
+    page_id_t tmp_tuple_page_id_;
+    auto bpm_tmp_tuple_page = exec_ctx_->GetBufferPoolManager()->NewPage(&tmp_tuple_page_id_);
+    bpm_tmp_tuple_page->WLatch();
+    auto tmp_tuple_page = reinterpret_cast<TmpTuplePage *>(bpm_tmp_tuple_page->GetData());
+    tmp_tuple_page->Init(tmp_tuple_page_id_, PAGE_SIZE);
+    // 1.1. Get tuple from left side, insert into tmp_tuple_page
+    TmpTuple tmp_tuple(INVALID_PAGE_ID, 0);
     while (left_executor_->Next(&t)) {
-      tuples_from_left_child.emplace_back(t);
-    }
-    // 1.2. Build hash table
-    for (const auto& left_tuple : tuples_from_left_child) {
-      const hash_t hash_value = HashValues(&left_tuple, left_output_schema, plan_->GetLeftKeys());
-      [[maybe_unused]] bool insert_res = jht_.Insert(exec_ctx_->GetTransaction(), hash_value, left_tuple);
-      assert(insert_res);
+      if (!tmp_tuple_page->Insert(t, &tmp_tuple)) {
+        // 1.1.1. tmp tuple page full, new a next one
+        bpm_tmp_tuple_page->WUnlatch();
+        exec_ctx_->GetBufferPoolManager()->UnpinPage(tmp_tuple_page_id_, true);
+        bpm_tmp_tuple_page = exec_ctx_->GetBufferPoolManager()->NewPage(&tmp_tuple_page_id_);
+        bpm_tmp_tuple_page->WLatch();
+        tmp_tuple_page = reinterpret_cast<TmpTuplePage *>(bpm_tmp_tuple_page->GetData());
+        tmp_tuple_page->Init(tmp_tuple_page_id_, PAGE_SIZE);
+        [[maybe_unused]] bool tmp_insert_res = tmp_tuple_page->Insert(t, &tmp_tuple);
+        assert(tmp_insert_res);
+      }
+      const hash_t hash_value = HashValues(&t, left_output_schema, plan_->GetLeftKeys());
+      // 1.2. insert into hash table
+      bool ht_insert_res = false;
+      try {
+        ht_insert_res = jht_.Insert(exec_ctx_->GetTransaction(), hash_value, tmp_tuple);
+      } catch (hash_table_full_error) {
+        // 1.2.1. resize hash table if necessary
+        jht_.Resize(jht_.GetSize());
+        ht_insert_res = jht_.Insert(exec_ctx_->GetTransaction(), hash_value, tmp_tuple);
+      }
+      assert(ht_insert_res);
+
     }
     jht_built_ = true;
+    bpm_tmp_tuple_page->WUnlatch();
+    exec_ctx_->GetBufferPoolManager()->UnpinPage(tmp_tuple_page_id_, true);
   }
 
   // 2.1. generate right tuple(s) until joined
@@ -68,15 +92,23 @@ bool HashJoinExecutor::Next(Tuple *tuple) {
   while (right_executor_->Next(&right_tuple_match)) {  // NOLINT
     // 2.2. probe hash table
     hash_t hash_value = HashJoinExecutor::HashValues(&right_tuple_match, right_output_schema, plan_->GetRightKeys());  // NOLINT
-    std::vector<Tuple> left_tuple_matches;
-    jht_.GetValue(exec_ctx_->GetTransaction(), hash_value, &left_tuple_matches);
-    assert(!left_tuple_matches.empty());
-    for (const auto& left_tuple_match : left_tuple_matches) {
+    std::vector<TmpTuple> left_tmp_tuple_matches;
+    jht_.GetValue(exec_ctx_->GetTransaction(), hash_value, &left_tmp_tuple_matches);
+    assert(!left_tmp_tuple_matches.empty());
+    for (const auto& left_tmp_tuple_match : left_tmp_tuple_matches) {
+      // 2.3. re-construct tuple from tmp_tuple_page
+      Tuple left_tuple_match;
+      auto bpm_tmp_tuple_page = exec_ctx_->GetBufferPoolManager()->FetchPage(left_tmp_tuple_match.GetPageId());
+      bpm_tmp_tuple_page->RLatch();
+      left_tuple_match.DeserializeFrom(bpm_tmp_tuple_page->GetData() + left_tmp_tuple_match.GetOffset());
+      bpm_tmp_tuple_page->RUnlatch();
+      exec_ctx_->GetBufferPoolManager()->UnpinPage(left_tmp_tuple_match.GetPageId(), false);
+      // 2.4. evaluate join predicate using tuples
       if ((predicate != nullptr) ?
            predicate->EvaluateJoin(&left_tuple_match, left_output_schema,
                                    &right_tuple_match, right_output_schema).GetAs<bool>()
          : true) {
-        // 2.3. ONLY one hash key matched and joined, build output tuple
+        // 2.5. ONLY one hash key matched and joined, build output tuple
         std::vector<Value> output_values;
         output_values.reserve(final_output_schema_col_count);
         for (size_t i = 0; i < final_output_schema_col_count; i++) {

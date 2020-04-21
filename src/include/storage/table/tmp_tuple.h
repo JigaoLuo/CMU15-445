@@ -4,7 +4,7 @@
 
 namespace bustub {
 
-// Document this class! What does it represent?
+// TODO(jigao): Document this class! What does it represent? hash key, hash value
 
 class TmpTuple {
  public:
@@ -14,6 +14,8 @@ class TmpTuple {
 
   page_id_t GetPageId() const { return page_id_; }
   size_t GetOffset() const { return offset_; }
+  void SetPageId(page_id_t page_id) { page_id_ = page_id; }
+  void SetOffset(size_t offset) { offset_ = offset; }
 
  private:
   page_id_t page_id_;

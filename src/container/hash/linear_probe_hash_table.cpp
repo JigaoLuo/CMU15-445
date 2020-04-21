@@ -19,6 +19,9 @@
 #include "common/logger.h"
 #include "common/rid.h"
 #include "container/hash/linear_probe_hash_table.h"
+#include "common/util/hash_util.h"
+#include "storage/index/hash_comparator.h"
+#include "storage/table/tmp_tuple.h"
 
 namespace bustub {
 
@@ -242,7 +245,8 @@ void HASH_TABLE_TYPE::Resize(size_t initial_size) {
   // 2. Resize
   const size_t old_page_number = page_number;
   const size_t num_buckets = initial_size * 2;
-  assert((num_buckets - 1) / BLOCK_ARRAY_SIZE_PRO_PAGE + 1 > page_number);
+  // this assesstion is wrong: not necessary to have more page. example num_buckets_ = 2, resize to 4
+//  assert((num_buckets - 1) / BLOCK_ARRAY_SIZE_PRO_PAGE + 1 > page_number);
   page_number = (num_buckets - 1) / BLOCK_ARRAY_SIZE_PRO_PAGE + 1;
   BLOCK_ARRAY_SIZE_LAST_PAGE = num_buckets - BLOCK_ARRAY_SIZE_PRO_PAGE * (page_number - 1);
   size_cache = num_buckets;
@@ -302,6 +306,7 @@ size_t HASH_TABLE_TYPE::GetSize() {
 }
 
 template class LinearProbeHashTable<int, int, IntComparator>;
+template class LinearProbeHashTable<hash_t, TmpTuple, HashComparator>;
 
 template class LinearProbeHashTable<GenericKey<4>, RID, GenericComparator<4>>;
 template class LinearProbeHashTable<GenericKey<8>, RID, GenericComparator<8>>;
