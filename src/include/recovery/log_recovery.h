@@ -42,15 +42,15 @@ class LogRecovery {
   bool DeserializeLogRecord(const char *data, LogRecord *log_record);
 
  private:
-  DiskManager *disk_manager_ __attribute__((__unused__));
-  BufferPoolManager *buffer_pool_manager_ __attribute__((__unused__));
+  DiskManager *disk_manager_;
+  BufferPoolManager *buffer_pool_manager_;
 
   /** Maintain active transactions and its corresponding latest lsn. */
   std::unordered_map<txn_id_t, lsn_t> active_txn_;
   /** Mapping the log sequence number to log file offset for undos. */
   std::unordered_map<lsn_t, int> lsn_mapping_;
 
-  int offset_ __attribute__((__unused__));
+  int offset_;
   char *log_buffer_;
 };
 

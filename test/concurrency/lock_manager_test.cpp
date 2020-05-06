@@ -56,13 +56,13 @@ void BasicTest1(DeadlockMode deadlock_mode) {
 }
 
 // NOLINTNEXTLINE
-TEST(LockManagerTest, DISABLED_BasicTest) {
+TEST(LockManagerTest, BasicTest) {
   BasicTest1(DeadlockMode::PREVENTION);
   BasicTest1(DeadlockMode::DETECTION);
 }
 
 // NOLINTNEXTLINE
-TEST(LockManagerTest, DISABLED_GraphEdgeTest) {
+TEST(LockManagerTest, GraphEdgeTest) {
   LockManager lock_mgr{TwoPLMode::REGULAR, DeadlockMode::DETECTION};
   TransactionManager txn_mgr{&lock_mgr};
   RID rid{0, 0};
@@ -77,7 +77,7 @@ TEST(LockManagerTest, DISABLED_GraphEdgeTest) {
 }
 
 // NOLINTNEXTLINE
-TEST(LockManagerTest, DISABLED_BasicCycleTest) {
+TEST(LockManagerTest, BasicCycleTest) {
   LockManager lock_mgr{TwoPLMode::REGULAR, DeadlockMode::DETECTION}; /* Use Deadlock detection */
   TransactionManager txn_mgr{&lock_mgr};
 
@@ -95,7 +95,7 @@ TEST(LockManagerTest, DISABLED_BasicCycleTest) {
 }
 
 // NOLINTNEXTLINE
-TEST(LockManagerTest, DISABLED_BasicDeadlockDetectionTest) {
+TEST(LockManagerTest, BasicDeadlockDetectionTest) {
   LockManager lock_mgr{TwoPLMode::REGULAR, DeadlockMode::DETECTION};
   cycle_detection_interval = std::chrono::milliseconds(500);
   TransactionManager txn_mgr{&lock_mgr};

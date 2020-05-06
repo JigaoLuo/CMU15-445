@@ -11,9 +11,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "buffer/buffer_pool_manager.h"
+#include "common/logger.h"  // NOLINT
 
-#include <list>
-#include <unordered_map>
+#include <list>  // NOLINT
+#include <unordered_map>  // NOLINT
 
 namespace bustub {
 
@@ -29,7 +30,8 @@ BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager
 }
 
 BufferPoolManager::~BufferPoolManager() {
-  FlushAllPagesImpl();  // Add by Jigao
+  //  Project4 require Buffer Pool Manager not to flush all dirty pages.
+  //  FlushAllPagesImpl();  // Add by Jigao
   delete[] pages_;
   delete replacer_;
 }
@@ -45,7 +47,6 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
     if (page->pin_count_++ == 0) {
       replacer_->Pin(got->second);
     }
-//    u_lock.unlock();
     return page;
   }
   // 2.   If all the pages in the buffer pool are pinned, return nullptr.
@@ -64,7 +65,6 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   const auto& got = page_table_.find(page_id);
   assert(got != page_table_.end());
   auto page = pages_ + got->second;
-//  page->WLatch();
   // 2. if pin_count <= 0 before this call, return false
   if (page->pin_count_ <= 0) {
     return false;
@@ -73,10 +73,8 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   if (--page->pin_count_ == 0) {
     replacer_->Unpin(got->second);
   }
-//  u_lock.unlock();
   // 4. is_dirty: set the dirty flag of this page
   page->is_dirty_ |= is_dirty;
-//  page->WUnlatch();
   return true;
 }
 
@@ -167,10 +165,29 @@ void BufferPoolManager::FlushAllPagesImpl() {
 }
 
 Page *BufferPoolManager::Evict(page_id_t page_id, bool new_page, std::unique_lock<std::shared_mutex>* u_lock) {
+  frame_id_t frame_r_id;
+  Page *page = nullptr;
+  // 0      For Project4
+  //       > In your BufferPoolManager, when a new page is created,
+  //       > if there is already an entry in the page_table_ mapping for the given page id,
+  //       > you should make sure you explicitly overwrite it with the frame id of the new page that was just created.
+//  if (new_page) {
+//    auto it = page_table_.find(page_id);
+//    if (it != page_table_.end()) {
+//      frame_r_id = it->second;
+//      page = pages_ + frame_r_id;
+//      page->WLatch();
+//      u_lock->unlock();
+//      if (page->is_dirty_) {
+//        int iii =5l;
+//        iii++;
+//      }
+////      page->is_dirty_ = false;
+//      goto last;
+//    }
+//  }
   // 1      If P does not exist, find a replacement page (R) from either the free list or the replacer.
   assert(!free_list_.empty() || replacer_->Size() != 0);
-  frame_id_t frame_r_id;
-  Page * page;
   if (!free_list_.empty()) {
     // 2.1     always find from free list first
     frame_r_id = free_list_.front();
@@ -201,8 +218,19 @@ Page *BufferPoolManager::Evict(page_id_t page_id, bool new_page, std::unique_loc
     assert(page->page_id_ != INVALID_PAGE_ID);
     // 2.2.2.     If R is dirty, write it back to the disk.
     if (page->is_dirty_) {
+      // Project 4.
+      // Before your buffer pool manager evicts a dirty page from LRU replacer and write this page back to db file,
+      // it needs to flush logs up to pageLSN. You need to compare persistent_lsn_ (a member variable maintains
+      // by Log Manager) with your pageLSN. However unlike group commit, buffer pool can force log manager to flush log
+      // buffer, but still needs to wait for logs to be permanently stored before continue
+      if (new_page) {
+        if (enable_logging && log_manager_->GetPersistentLSN() < page->GetLSN()) {
+            LOG_INFO("BufferPoolManager::Evict := Evict a Dirty Page, Triggering a Flushing Log to Disk.");  // NOLINT
+            log_manager_->Flush(true);
+        }
+      }
       disk_manager_->WritePage(page->page_id_, page->data_);
-      page->is_dirty_ = false;
+//      page->is_dirty_ = false;
     }
     // 2.2.3.     If not called by NewPage, read in the page content from disk
     if (!new_page) {
@@ -211,9 +239,12 @@ Page *BufferPoolManager::Evict(page_id_t page_id, bool new_page, std::unique_loc
       page->ResetMemory();
     }
   }
+//  last:
   // 3.     Update P's metadata and then return a pointer to P.
   page->page_id_ = page_id;
   page->pin_count_ = 1;
+  // For Project 4 := new page is assumed always dirty, since the unpin can't be called at DBMS-Down-Time.
+  page->is_dirty_ = new_page;
   page->WUnlatch();
   return page;
 }

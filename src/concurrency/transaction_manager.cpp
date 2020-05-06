@@ -24,22 +24,22 @@ std::unordered_map<txn_id_t, Transaction *> TransactionManager::txn_map = {};
 Transaction *TransactionManager::Begin(Transaction *txn) {
   // Acquire the global transaction latch in shared mode.
   global_txn_latch_.RLock();
-
   if (txn == nullptr) {
     txn = new Transaction(next_txn_id_++);
   }
-
   if (enable_logging) {
     // TODO(student): Add logging here.
+    assert(txn->GetPrevLSN() == INVALID_LSN);
+    LogRecord log_record = LogRecord(txn->GetTransactionId(), txn->GetPrevLSN(), LogRecordType::BEGIN);
+    lsn_t lsn = log_manager_->AppendLogRecord(&log_record);
+    txn->SetPrevLSN(lsn);
   }
-
   txn_map[txn->GetTransactionId()] = txn;
   return txn;
 }
 
 void TransactionManager::Commit(Transaction *txn) {
   txn->SetState(TransactionState::COMMITTED);
-
   // Perform all deletes before we commit.
   auto write_set = txn->GetWriteSet();
   while (!write_set->empty()) {
@@ -52,11 +52,20 @@ void TransactionManager::Commit(Transaction *txn) {
     write_set->pop_back();
   }
   write_set->clear();
-
   if (enable_logging) {
     // TODO(student): add logging here
+    // Within TransactionManager, whenever you call the Commit or Abort method,
+    // you need to make sure your log records are permanently stored on disk file before releasing the locks.
+    // But instead of forcing a flush, you need to wait for log_timeout or other operations
+    // to implicitly trigger the flush operations.
+    LogRecord log_record = LogRecord(txn->GetTransactionId(), txn->GetPrevLSN(), LogRecordType::COMMIT);
+    lsn_t lsn = log_manager_->AppendLogRecord(&log_record);
+    txn->SetPrevLSN(lsn);
+    log_manager_->Flush(false);
+//    while (log_manager_->GetPersistentLSN() >= lsn) {
+//      std::this_thread::yield();
+//    }
   }
-
   // Release all the locks.
   ReleaseLocks(txn);
   // Release the global transaction latch.
@@ -85,6 +94,14 @@ void TransactionManager::Abort(Transaction *txn) {
 
   if (enable_logging) {
     // TODO(student): add logging here
+    // Within TransactionManager, whenever you call the Commit or Abort method,
+    // you need to make sure your log records are permanently stored on disk file before releasing the locks.
+    // But instead of forcing a flush, you need to wait for log_timeout or other operations
+    // to implicitly trigger the flush operations.
+    LogRecord log_record = LogRecord(txn->GetTransactionId(), txn->GetPrevLSN(), LogRecordType::ABORT);
+    lsn_t lsn = log_manager_->AppendLogRecord(&log_record);
+    txn->SetPrevLSN(lsn);
+    log_manager_->Flush(false);
   }
 
   // Release all the locks.

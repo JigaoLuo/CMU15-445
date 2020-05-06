@@ -131,8 +131,16 @@ void DiskManager::WriteLog(char *log_data, int size) {
   flush_log_ = true;
 
   if (flush_log_f_ != nullptr) {
+      std::future_status status = flush_log_f_->wait_for(std::chrono::seconds(30));
     // used for checking non-blocking flushing
-    assert(flush_log_f_->wait_for(std::chrono::seconds(10)) == std::future_status::ready);
+      if (status == std::future_status::deferred) {
+          std::cout << "deferred\n";
+      } else if (status == std::future_status::timeout) {
+          std::cout << "timeout\n";
+      } else if (status == std::future_status::ready) {
+          std::cout << "ready!\n";
+      }
+//    assert(flush_log_f_->wait_for(std::chrono::seconds(10)) == std::future_status::ready);
   }
 
   num_flushes_ += 1;

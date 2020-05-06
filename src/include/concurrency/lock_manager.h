@@ -140,7 +140,8 @@ class LockManager {
   bool HasCycle(txn_id_t *txn_id);
 
   /** @return the set of all edges in the graph, used for testing only! */
-  std::vector<std::pair<txn_id_t, txn_id_t>> GetEdgeList();
+  using GraphEdge = std::pair<txn_id_t, txn_id_t>;
+  std::vector<GraphEdge> GetEdgeList();
 
   /** Runs cycle detection in the background. */
   void RunCycleDetection();
@@ -159,6 +160,7 @@ class LockManager {
   /** Lock table for lock requests. */
   std::unordered_map<RID, LockRequestQueue> lock_table_;
   /** Waits-for graph representation. */
+  std::vector<GraphEdge> graph;
   std::unordered_map<txn_id_t, std::vector<txn_id_t>> waits_for_;
 };
 

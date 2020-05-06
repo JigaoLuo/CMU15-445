@@ -35,9 +35,9 @@ class CheckpointManager {
   void EndCheckpoint();
 
  private:
-  TransactionManager *transaction_manager_ __attribute__((__unused__));
-  LogManager *log_manager_ __attribute__((__unused__));
-  BufferPoolManager *buffer_pool_manager_ __attribute__((__unused__));
+  TransactionManager *transaction_manager_;
+  LogManager *log_manager_;
+  BufferPoolManager *buffer_pool_manager_;
 };
 
 }  // namespace bustub

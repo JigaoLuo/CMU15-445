@@ -31,7 +31,9 @@ class LogManager {
   explicit LogManager(DiskManager *disk_manager)
       : next_lsn_(0), persistent_lsn_(INVALID_LSN), disk_manager_(disk_manager) {
     log_buffer_ = new char[LOG_BUFFER_SIZE];
+    std::memset(log_buffer_, 0, LOG_BUFFER_SIZE);
     flush_buffer_ = new char[LOG_BUFFER_SIZE];
+    std::memset(flush_buffer_, 0, LOG_BUFFER_SIZE);
   }
 
   ~LogManager() {
@@ -43,8 +45,8 @@ class LogManager {
 
   void RunFlushThread();
   void StopFlushThread();
-
   lsn_t AppendLogRecord(LogRecord *log_record);
+  void Flush(bool if_force);
 
   inline lsn_t GetNextLSN() { return next_lsn_; }
   inline lsn_t GetPersistentLSN() { return persistent_lsn_; }
@@ -62,13 +64,24 @@ class LogManager {
   char *log_buffer_;
   char *flush_buffer_;
 
+  // TODO(jigao): set by buffer manager????
+  std::atomic_bool needs_flush = false;
+
+  lsn_t lastLsn_ = INVALID_LSN; //update in append log, use it in flush
+
+  int32_t log_buffer_write_offset = 0;
+
+  int32_t flush_buffer_write_offset = 0;
+
   std::mutex latch_;
 
-  std::thread *flush_thread_ __attribute__((__unused__));
+  std::thread *flush_thread_;
+
+  std::condition_variable append_cv_;
 
   std::condition_variable cv_;
 
-  DiskManager *disk_manager_ __attribute__((__unused__));
+  DiskManager *disk_manager_;
 };
 
 }  // namespace bustub

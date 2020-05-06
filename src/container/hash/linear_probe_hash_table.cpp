@@ -121,6 +121,7 @@ bool HASH_TABLE_TYPE::Insert_Helper(Transaction *transaction, const KeyType &key
   auto bpm_page = buffer_pool_manager_->FetchPage(page_ids_cache[page_index]);
   bpm_page->WLatch();
   auto block_page = reinterpret_cast<HashTableBlockPage<KeyType, ValueType, KeyComparator>*>(bpm_page->GetData());
+  // TODO(jigao): 记录第一个墓碑　看微信聊天记录
   while (!block_page->Insert(slot_offset, key, value)) {
     if (block_page->IsReadable(slot_offset)
         && comparator_(key, block_page->KeyAt(slot_offset)) == 0
